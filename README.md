@@ -14,3 +14,7 @@ Install packages using pip and requirements file
 ```bash
 python3 -m pip install -r requirements.txt
 ```
+
+Links:
+- https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/
+- https://console.cloud.google.com/welcome?project=sgprofitomer

@@ -40,8 +40,6 @@ def list_folders_in_folder(service, folder_id):
     return folders
 
 
-
-
 # Скачивание файла
 def download_file(service, file_id, file_name):
     request = service.files().get_media(fileId=file_id)
@@ -61,24 +59,19 @@ def process_files(service, folder_id, output_folder='output'):
     folders = list_folders_in_folder(service, folder_id)
 
     # Вывод списка папок
-    print("Вложенные папки:")
     for folder in folders:
-        print(f"Название: {folder['name']}, ID: {folder['id']}")
         week_folders = list_folders_in_folder(service, folder['id'])
-        for folder in week_folders:
-            print(f"- Название: {folder['name']}, ID: {folder['id']}")
-#    for file in files:
-#        if file['mimeType'] == 'application/vnd.google-apps.folder':  # Это папка
-#            subfolder_path = os.path.join(output_folder, file['name'])
-#            os.makedirs(subfolder_path, exist_ok=True)
-#            process_files(service, file['id'], subfolder_path)
-#        elif file['mimeType'] in ['application/zip', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']:
-#            file_path = os.path.join(output_folder, file['name'])
-#            download_file(service, file['id'], file_path)
-#            if file['name'].endswith('.zip'):  # Если это zip
-#                with zipfile.ZipFile(file_path, 'r') as zip_ref:
-#                    zip_ref.extractall(output_folder)
-#                os.remove(file_path)  # Удалить исходный zip
+        for week_folder in week_folders:
+            files = list_files(service, week_folder['id'])
+            for file in files:
+                file_path = os.path.join(output_folder, file['name'])
+                download_file(service, file['id'], file_path)
+                if file['name'].endswith('.zip'):  # Если это zip
+                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                        zip_ref.extractall(output_folder)
+                        xlsx_name = os.path.join(output_folder,folder['name']+"__"+week_folder['name']+".xlsx")
+                        os.rename(os.path.join(output_folder,"0.xlsx"), xlsx_name)
+                    os.remove(file_path)  # Удалить исходный zip
 
 # Преобразование данных в DataFrame
 def create_dataframes(output_folder='output'):
