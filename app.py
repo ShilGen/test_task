@@ -7,19 +7,26 @@ import pandas as pd
 from io import BytesIO
 
 # Укажите путь к вашему credentials.json
-CREDENTIALS_FILE = 'credentials.json'
-FOLDER_ID = '1H9_lQojUD1QDBqLV9iv9Tfza2PI2x6hV'
+CREDENTIALS_FILE = "credentials.json"
+FOLDER_ID = "1H9_lQojUD1QDBqLV9iv9Tfza2PI2x6hV"
+
 
 # Авторизация
 def authorize():
-    creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=["https://www.googleapis.com/auth/drive"])
-    return build('drive', 'v3', credentials=creds)
+    creds = Credentials.from_service_account_file(
+        CREDENTIALS_FILE, scopes=["https://www.googleapis.com/auth/drive"]
+    )
+    return build("drive", "v3", credentials=creds)
+
 
 # Получение списка файлов в папке
 def list_files(service, folder_id):
     query = f"'{folder_id}' in parents and trashed = false"
-    results = service.files().list(q=query, fields="files(id, name, mimeType)").execute()
-    return results.get('files', [])
+    results = (
+        service.files().list(q=query, fields="files(id, name, mimeType)").execute()
+    )
+    return results.get("files", [])
+
 
 def list_folders_in_folder(service, folder_id):
     """Получить список вложенных папок по ID родительской папки"""
@@ -27,14 +34,18 @@ def list_folders_in_folder(service, folder_id):
     folders = []
     page_token = None
     while True:
-        response = service.files().list(
-            q=query,
-            spaces='drive',
-            fields="nextPageToken, files(id, name)",
-            pageToken=page_token
-        ).execute()
-        folders.extend(response.get('files', []))
-        page_token = response.get('nextPageToken', None)
+        response = (
+            service.files()
+            .list(
+                q=query,
+                spaces="drive",
+                fields="nextPageToken, files(id, name)",
+                pageToken=page_token,
+            )
+            .execute()
+        )
+        folders.extend(response.get("files", []))
+        page_token = response.get("nextPageToken", None)
         if not page_token:
             break
     return folders
@@ -49,36 +60,41 @@ def download_file(service, file_id, file_name):
     while not done:
         status, done = downloader.next_chunk()
     fh.seek(0)
-    with open(file_name, 'wb') as f:
+    with open(file_name, "wb") as f:
         f.write(fh.read())
 
+
 # Обработка файлов
-def process_files(service, folder_id, output_folder='output'):
+def process_files(service, folder_id, output_folder="output"):
     os.makedirs(output_folder, exist_ok=True)
     # Получить список вложенных папок
     folders = list_folders_in_folder(service, folder_id)
 
     # Вывод списка папок
     for folder in folders:
-        week_folders = list_folders_in_folder(service, folder['id'])
+        week_folders = list_folders_in_folder(service, folder["id"])
         for week_folder in week_folders:
-            files = list_files(service, week_folder['id'])
+            files = list_files(service, week_folder["id"])
             for file in files:
-                file_path = os.path.join(output_folder, file['name'])
-                download_file(service, file['id'], file_path)
-                if file['name'].endswith('.zip'):  # Если это zip
-                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                file_path = os.path.join(output_folder, file["name"])
+                download_file(service, file["id"], file_path)
+                if file["name"].endswith(".zip"):  # Если это zip
+                    with zipfile.ZipFile(file_path, "r") as zip_ref:
                         zip_ref.extractall(output_folder)
-                        xlsx_name = os.path.join(output_folder,folder['name']+"__"+week_folder['name']+".xlsx")
-                        os.rename(os.path.join(output_folder,"0.xlsx"), xlsx_name)
+                        xlsx_name = os.path.join(
+                            output_folder,
+                            folder["name"] + "__" + week_folder["name"] + ".xlsx",
+                        )
+                        os.rename(os.path.join(output_folder, "0.xlsx"), xlsx_name)
                     os.remove(file_path)  # Удалить исходный zip
 
+
 # Преобразование данных в DataFrame
-def create_dataframes(output_folder='output'):
+def create_dataframes(output_folder="output"):
     dataframes = {}
     for root, _, files in os.walk(output_folder):
         for file in files:
-            if file.endswith('.xlsx'):
+            if file.endswith(".xlsx"):
                 file_path = os.path.join(root, file)
                 df = pd.read_excel(file_path)
                 project_name = os.path.basename(root)
@@ -86,6 +102,7 @@ def create_dataframes(output_folder='output'):
                 key = f"{project_name}_{week}"
                 dataframes[key] = df
     return dataframes
+
 
 # Основной скрипт
 if __name__ == "__main__":
@@ -95,4 +112,3 @@ if __name__ == "__main__":
 #    for key, df in dataframes.items():
 #        print(f"Данные для {key}:")
 #        print(df.head())
-
