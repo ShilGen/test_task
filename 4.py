@@ -9,7 +9,7 @@ CREDENTIALS_FILE = "credentials.json"
 SPREADSHEET_ID = "1ARwjDUy3KvxbZyDrkMsfoz4EZnbI_SqGG4ldjDW8dhc"
 
 # Название нового листа
-NEW_SHEET_NAME = "Summary"
+NEW_SHEET_NAME = "test"
 
 # Авторизация
 def authorize():
@@ -23,7 +23,6 @@ def authorize():
 def write_to_google_sheets(dataframe, spreadsheet_id, sheet_name):
     service = authorize()
     sheets = service.spreadsheets()
-    
     # Добавление нового листа
     sheets.batchUpdate(
         spreadsheetId=spreadsheet_id,
@@ -33,7 +32,6 @@ def write_to_google_sheets(dataframe, spreadsheet_id, sheet_name):
             ]
         }
     ).execute()
-    
     # Преобразование DataFrame в список
     data = [dataframe.columns.tolist()] + dataframe.values.tolist()
     
